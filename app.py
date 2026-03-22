@@ -23,8 +23,8 @@ FEATURE_NAMES = [
 
 # Sidebar: Metrik Validasi (Social Proof untuk Rekruter)
 st.sidebar.header("🚀 Model Reliability")
-st.sidebar.metric("ROC-AUC Score", "0.8524")
-st.sidebar.metric("Stability Gap", "0.0218", delta="Very Stable", delta_color="normal")
+st.sidebar.metric("ROC-AUC Score", "0.8525")
+st.sidebar.metric("Stability Gap", "0.0371", delta="Very Stable", delta_color="normal")
 st.sidebar.markdown("---")
 st.sidebar.write("Architecture: **Challenger Model** (LGBM + LogReg)")
 
@@ -62,7 +62,7 @@ if submit:
 
     # Layer 1: Decision (LightGBM)
     prob_bad = 1 - model_decision.predict_proba(df_input)[:, 1][0]
-    is_bad = prob_bad >= 0.68  # Threshold 0.68
+    is_bad = prob_bad >= 0.69  # Threshold 0.69
 
     st.markdown("---")
     

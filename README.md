@@ -27,10 +27,10 @@ Berdasarkan pengujian pada *test set* yang tidak terlihat sebelumnya, model ini 
 
 | Metric | Value | Note |
 | :--- | :--- | :--- |
-| **ROC-AUC** | **0.8524** | Menunjukkan kemampuan diskriminasi yang sangat baik. |
-| **Recall (Bad Class)** | **83.74%** | Meminimalisir risiko kerugian bank dari nasabah berisiko. |
-| **Stability Gap** | **0.0218** | Perbedaan minimal antara performa Train dan Test (Very Stable). |
-| **Decision Threshold** | **0.68** | Titik optimal untuk menyeimbangkan *profitability* dan *risk*. |
+| **ROC-AUC** | **0.8525** | Menunjukkan kemampuan diskriminasi yang sangat baik. |
+| **Recall (Bad Class)** | **82.19%** | Meminimalisir risiko kerugian bank dari nasabah berisiko. |
+| **Stability Gap** | **0.0371** | Perbedaan minimal antara performa Train dan Test (Very Stable). |
+| **Decision Threshold** | **0.69** | Titik optimal untuk menyeimbangkan *profitability* dan *risk*. |
 
 -----
 
