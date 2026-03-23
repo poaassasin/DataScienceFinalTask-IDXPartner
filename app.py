@@ -1,81 +1,85 @@
 import streamlit as st
 import pandas as pd
-import joblib
 import numpy as np
+import joblib
 
-# Konfigurasi UI/UX
-st.set_page_config(page_title="Credit Scoring System", layout="wide")
+model_lgbm = joblib.load('model_decision_lgbm.pkl')
+model_logreg = joblib.load('model_explanation_lr.pkl')
 
-# 1. Load Kedua Model (Versi 10 Fitur)
-@st.cache_resource
-def load_models():
-    lgbm = joblib.load('model_decision_lgbm.pkl')
-    lr = joblib.load('model_explanation_lr.pkl')
-    return lgbm, lr
+# 1. Konfigurasi Halaman & Sidebar
+st.set_page_config(page_title="Banking Credit Engine", layout="wide")
 
-model_decision, model_explanation = load_models()
+with st.sidebar:
+    st.markdown("### 🚀 Model Reliability")
+    # Angka sesuai laporan terbaru Anda
+    st.metric("ROC-AUC Score", "0.8523")
+    st.write("**Stability Gap LGBM:** 0.0340")
+    st.write("**Stability Gap LogReg:** 0.0002")
+    st.markdown("---")
+    st.info("Decision: **LightGBM**\n\nExplanation: **LogReg**")
 
-FEATURE_NAMES = [
-    'mths_since_issue_d', 'mths_since_last_pymnt_d', 'annual_inc', 
-    'dti', 'revol_util', 'mths_since_earliest_cr_line', 
-    'tot_cur_bal', 'int_rate', 'revol_bal', 'total_rev_hi_lim'
+# 2. Definisi 10 Fitur LightGBM (Sesuai Urutan Rank Produksi)
+# Fitur inilah yang akan muncul di UI dan digunakan untuk prediksi
+FEATURES_LGBM = [
+    'mths_since_issue_d', 'mths_since_last_pymnt_d', 'mths_since_earliest_cr_line',
+    'dti', 'annual_inc', 'revol_util', 'tot_cur_bal', 'revol_bal', 'installment', 'int_rate'
 ]
 
-# Sidebar: Metrik Validasi (Social Proof untuk Rekruter)
-st.sidebar.header("🚀 Model Reliability")
-st.sidebar.metric("ROC-AUC Score", "0.8525")
-st.sidebar.metric("Stability Gap", "0.0371", delta="Very Stable", delta_color="normal")
-st.sidebar.markdown("---")
-st.sidebar.write("Architecture: **Challenger Model** (LGBM + LogReg)")
-
 st.title("🏦 Banking Credit Engine")
-st.write("Sistem Pendukung Keputusan Kredit Real-time.")
+st.caption("Sistem Keputusan Kredit Berbasis 10 Fitur Utama LightGBM.")
 
-# 2. Input Form (UI Layout 2 Kolom)
-with st.form("loan_form"):
+# 3. Form Input Pengguna (Hanya 10 Fitur Utama)
+with st.form("credit_form"):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("💰 Financial Profile")
-        annual_inc = st.number_input("Annual Income", min_value=0, value=50000)
-        int_rate = st.slider("Interest Rate", 0.05, 0.35, 0.15)
-        dti = st.number_input("Debt-to-Income Ratio (DTI)", 0.0, 100.0, 20.0)
-        tot_cur_bal = st.number_input("Total Current Balance", 0, 1000000, 180000)
-        total_rev_hi_lim = st.number_input("Total Credit Limit", 0, 500000, 20000)
+        st.markdown("### 💰 Financial Profile")
+        annual_inc = st.number_input("Annual Income", value=20000)
+        int_rate = st.slider("Interest Rate (%)", 0.05, 0.30, 0.08)
+        dti = st.number_input("Debt-to-Income Ratio (DTI)", value=5.0)
+        tot_cur_bal = st.number_input("Total Current Balance", value=5000)
+        installment = st.number_input("Monthly Installment", value=30)
 
     with col2:
-        st.subheader("📜 Credit History")
-        last_pay = st.number_input("Months Since Last Payment", 0, 120, 3)
-        issue_d = st.number_input("Months Since Loan Issued", 0, 120, 12)
-        earliest_cr = st.number_input("Months Since Earliest Credit Line", 0, 500, 72)
-        revol_util = st.slider("Revolving Utilization (%)", 0.0, 100.0, 50.0)
-        revol_bal = st.number_input("Revolving Balance", 0, 100000, 15000)
+        st.markdown("### 📜 Credit History")
+        mths_issue = st.number_input("Months Since Loan Issued", value=120)
+        mths_last_pay = st.number_input("Months Since Last Payment", value=1)
+        mths_earliest_cr = st.number_input("Months Since Earliest Credit Line", value=72)
+        revol_util = st.slider("Revolving Utilization (%)", 0.0, 100.0, 48.0)
+        revol_bal = st.number_input("Revolving Balance", value=15000)
 
-    submit = st.form_submit_button("Run Analysis", use_container_width=True)
+    submit = st.form_submit_button("Run Analysis")
 
-# 3. Logika Prediksi & Eksplanasi
+# 4. Prediksi & Penjelasan (Layered Logic)
 if submit:
-    df_input = pd.DataFrame([[
-        issue_d, last_pay, annual_inc, dti, revol_util, 
-        earliest_cr, tot_cur_bal, int_rate, revol_bal, total_rev_hi_lim
-    ]], columns=FEATURE_NAMES)
+    # Siapkan data dalam DataFrame
+    input_values = [
+        mths_issue, mths_last_pay, mths_earliest_cr, dti, 
+        annual_inc, revol_util, tot_cur_bal, revol_bal, installment, int_rate
+    ]
 
-    # Layer 1: Decision (LightGBM)
-    prob_bad = 1 - model_decision.predict_proba(df_input)[:, 1][0]
-    is_bad = prob_bad >= 0.69  # Threshold 0.69
+    df_input = pd.DataFrame([input_values], columns=FEATURES_LGBM)
+
+    prob_bad = model_lgbm.predict_proba(df_input)[:, 1][0]
+
+    is_rejected = prob_bad >= 0.66
 
     st.markdown("---")
-    
-    if is_bad:
+    if is_rejected:
         st.error("### ❌ Status: REJECTED")
         st.write(f"Confidence Score: **{prob_bad:.2%}** probability of default.")
-        
-        # Layer 2: Explanation (Logistic Regression) - Anti-Bullying Logic
-        coeffs = np.abs(model_explanation.coef_[0])
-        top_trigger_idx = np.argmax(coeffs)
-        top_trigger_feature = FEATURE_NAMES[top_trigger_idx]
-        
-        st.info(f"**Alasan Penolakan:** Faktor risiko utama terdeteksi pada **{top_trigger_feature.replace('_', ' ').title()}**.")
+
+        # --- LAYER 2: PENJELASAN (LOGISTIC REGRESSION) ---
+        # Penjelasan dari LogReg tetap pakai logika 'Local Impact'
+        coeffs = model_logreg.coef_[0]
+    
+        # Hitung dampak lokal: Nilai Input * Koefisien
+        # Fitur dengan hasil kali paling negatif (terkecil) adalah biang kerok risiko
+        local_impact = np.array(input_values) * coeffs
+        risk_idx = np.argmin(local_impact)
+        risk_feature = FEATURES_LGBM[risk_idx]
+
+        st.info(f"**Alasan Penolakan:** Faktor risiko utama pada **{FEATURES_LGBM[risk_idx].replace('_', ' ').title()}**.")
     else:
         st.success("### ✅ Status: APPROVED")
         st.write(f"Confidence Score: **{prob_bad:.2%}** probability of default.")
