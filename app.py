@@ -12,8 +12,8 @@ st.set_page_config(page_title="Banking Credit Engine", layout="wide")
 with st.sidebar:
     st.markdown("### 🚀 Model Reliability")
     # Angka sesuai laporan terbaru Anda
-    st.metric("ROC-AUC Score", "0.8523")
-    st.write("**Stability Gap LGBM:** 0.0340")
+    st.metric("ROC-AUC Score", "0.8544")
+    st.write("**Stability Gap LGBM:** 0.0346")
     st.write("**Stability Gap LogReg:** 0.0002")
     st.markdown("---")
     st.info("Decision: **LightGBM**\n\nExplanation: **LogReg**")
